@@ -53,7 +53,8 @@ RUN pip install --no-cache-dir \
       ultralytics \
       opencv-python-headless \
       paramiko \
-      shapely
+      shapely \
+      lapx
 
 # ---------------------------------------------------------------------------
 # Application setup
