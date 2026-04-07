@@ -82,7 +82,7 @@ RUN chmod +x entrypoint.sh healthcheck.sh
 # UID 1000 matches the default first user on most Linux desktops, which makes
 # bind-mounted output directories writeable without extra chmod steps.
 # ---------------------------------------------------------------------------
-RUN useradd -m -u 1000 appcam && \
+RUN useradd -l -m -u 1000 appcam && \
     chown -R appcam:appcam /app
 USER appcam
 
