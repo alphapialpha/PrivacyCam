@@ -45,7 +45,7 @@ RUN ARCH="$(uname -m)" && \
 #   Using the GUI build (opencv-python) in a headless container causes
 #   ImportError at runtime.
 #
-# ultralytics: provides solutions.ObjectBlurrer and the YOLO model runner.
+# ultralytics: provides YOLO detection; blur is applied via cv2.GaussianBlur.
 # paramiko:    pure-Python SSH/SFTP client; replaces rclone entirely.
 #
 # For production deployments, pin exact versions, e.g.:
@@ -88,8 +88,7 @@ RUN chmod +x entrypoint.sh healthcheck.sh
 # bind-mounted output directories writeable without extra chmod steps.
 # ---------------------------------------------------------------------------
 RUN useradd -l -m -u 1000 appcam && \
-    chown -R appcam:appcam /app && \
-    mkdir -p /tmp/Ultralytics && chmod 777 /tmp/Ultralytics
+    chown -R appcam:appcam /app
 USER appcam
 
 # ---------------------------------------------------------------------------

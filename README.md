@@ -13,7 +13,7 @@ every N minutes
  capture frame          cv2.VideoCapture  →  raw JPEG in memory
       │
       ▼
- detect & blur          YOLO ObjectBlurrer  →  blurred numpy array
+ detect & blur          YOLO detection + cv2.GaussianBlur  →  blurred numpy array
       │
       ▼
  save to disk           /output/latest.jpg  (+ optional timestamped copy)
