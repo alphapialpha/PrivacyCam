@@ -18,6 +18,11 @@ services:
     devices:
       - /dev/video0:/dev/video0
 
+    # Allow the container user to access the video device.
+    # Docker resolves 'video' to the host group's GID at runtime.
+    group_add:
+      - video
+
     # -------------------------------------------------------------------------
     # Output directory
     #

@@ -43,7 +43,7 @@ fi
 # supercronic supports standard 5-field Vixie cron syntax.
 # */N runs at every N-th minute past the hour: */5 → 0,5,10,...,55
 CRON_FILE="/tmp/crontab"
-echo "*/${INTERVAL_MINUTES} * * * *  python /app/privacy_cam.py" > "${CRON_FILE}"
+echo "*/${INTERVAL_MINUTES} * * * *  /usr/local/bin/python /app/privacy_cam.py" > "${CRON_FILE}"
 
 log "Interval : every ${INTERVAL_MINUTES} minute(s)"
 log "Cron spec: */${INTERVAL_MINUTES} * * * *"
