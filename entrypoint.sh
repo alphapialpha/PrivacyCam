@@ -43,8 +43,7 @@ fi
 # supercronic supports standard 5-field Vixie cron syntax.
 # */N runs at every N-th minute past the hour: */5 → 0,5,10,...,55
 CRON_FILE="/tmp/crontab"
-# Write PATH explicitly so supercronic can find python without inheriting shell environment.
-printf 'SHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/%s * * * *  python /app/privacy_cam.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
+printf '*/%s * * * *  /usr/local/bin/python /app/privacy_cam.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
 
 log "Interval : every ${INTERVAL_MINUTES} minute(s)"
 log "Cron spec: */${INTERVAL_MINUTES} * * * *"

@@ -62,8 +62,11 @@ RUN pip install --no-cache-dir \
 WORKDIR /app
 
 # Silence Ultralytics telemetry and verbose banners at build and runtime.
+# YOLO_CONFIG_DIR redirects the settings/cache directory into /app so that
+# the chown below covers it and the non-root user can write to it at runtime.
 ENV YOLO_VERBOSE=False \
-    YOLO_TELEMETRY=False
+    YOLO_TELEMETRY=False \
+    YOLO_CONFIG_DIR=/app/ultralytics_cache
 
 # Pre-download the YOLO model into the image so the container starts offline.
 # Working directory is set to /app/models so the model file is written there
