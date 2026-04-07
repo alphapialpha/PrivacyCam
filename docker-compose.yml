@@ -1,7 +1,7 @@
 services:
   privacy_cam:
     build: .
-    container_name: privacy_cam
+    container_name: PrivacyCam
     restart: unless-stopped
 
     # All configuration (schedule, model, SFTP, etc.) lives in .env.
