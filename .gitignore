@@ -1,0 +1,13 @@
+# Environment / secrets — NEVER commit this
+.env
+
+# Host output directory
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store

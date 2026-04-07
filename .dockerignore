@@ -1,0 +1,23 @@
+# Never bake secrets into the image
+.env
+
+# Version control
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store
+
+# Host output directory (mounted at runtime, not needed in image)
+output/
+
+# Editor artefacts
+*.swp
+*.swo
+.vscode/
+.idea/

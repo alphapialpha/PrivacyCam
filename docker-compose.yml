@@ -1,0 +1,39 @@
+services:
+  privacy_cam:
+    build: .
+    container_name: privacy_cam
+    restart: unless-stopped
+
+    # All configuration (schedule, model, SFTP, etc.) lives in .env.
+    # Copy .env.example to .env and fill in your values before first run.
+    env_file: .env
+
+    # -------------------------------------------------------------------------
+    # Webcam device passthrough
+    #
+    # Maps the host video device into the container.
+    # If your webcam is at /dev/video1 (check with: ls /dev/video*), change
+    # both entries below AND set WEBCAM_DEVICE=1 in your .env file.
+    # -------------------------------------------------------------------------
+    devices:
+      - /dev/video0:/dev/video0
+
+    # -------------------------------------------------------------------------
+    # Output directory
+    #
+    # Blurred images are written to ./output on the host.
+    # The directory must exist and be writable by UID 1000 before first run:
+    #   mkdir -p output
+    # -------------------------------------------------------------------------
+    volumes:
+      - ./output:/output
+
+    # -------------------------------------------------------------------------
+    # Optional resource limits — uncomment to protect shared hosts.
+    # YOLO inference on CPU can spike memory and CPU briefly each interval.
+    # -------------------------------------------------------------------------
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1g
+    #       cpus: "1.5"
