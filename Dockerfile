@@ -1,7 +1,7 @@
 # =============================================================================
 # PrivacyCam Dockerfile
 # =============================================================================
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # ---------------------------------------------------------------------------
 # System dependencies
@@ -20,21 +20,23 @@ RUN apt-get update && \
 # supercronic — cron daemon designed for containers (logs to stdout, no PID issues)
 # https://github.com/aptible/supercronic
 #
-# Security note: pinned to a specific release version.
-# Verify the SHA256 of the downloaded binary matches the release checksums at:
-#   https://github.com/aptible/supercronic/releases/tag/v0.2.33
+# Pinned to v0.2.44. SHA1 checksums from the official releases page:
+#   https://github.com/aptible/supercronic/releases/tag/v0.2.44
+# The fork-exec "no such file" bug present in v0.2.33 was fixed in v0.2.36.
 # ---------------------------------------------------------------------------
-ARG SUPERCRONIC_VERSION=0.2.33
+ARG SUPERCRONIC_VERSION=0.2.44
 RUN ARCH="$(uname -m)" && \
     case "${ARCH}" in \
-      x86_64)  SC_ARCH=amd64 ;; \
-      aarch64) SC_ARCH=arm64 ;; \
+      x86_64)  SC_ARCH=amd64; SC_SHA1=6eb0a8e1e6673675dc67668c1a9b6409f79c37bc ;; \
+      aarch64) SC_ARCH=arm64; SC_SHA1=6c6cba4cde1dd4a1dd1e7fb23498cde1b57c226c ;; \
       *)        echo "Unsupported architecture: ${ARCH}" >&2 && exit 1 ;; \
     esac && \
-    curl -fsSL \
-      "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${SC_ARCH}" \
-      -o /usr/local/bin/supercronic && \
-    chmod +x /usr/local/bin/supercronic
+    SC_BIN="supercronic-linux-${SC_ARCH}" && \
+    curl -fsSLO "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/${SC_BIN}" && \
+    echo "${SC_SHA1}  ${SC_BIN}" | sha1sum -c - && \
+    chmod +x "${SC_BIN}" && \
+    mv "${SC_BIN}" "/usr/local/bin/${SC_BIN}" && \
+    ln -s "/usr/local/bin/${SC_BIN}" /usr/local/bin/supercronic
 
 # ---------------------------------------------------------------------------
 # Python dependencies
@@ -52,9 +54,7 @@ RUN ARCH="$(uname -m)" && \
 RUN pip install --no-cache-dir \
       ultralytics \
       opencv-python-headless \
-      paramiko \
-      shapely \
-      lapx
+      paramiko
 
 # ---------------------------------------------------------------------------
 # Application setup

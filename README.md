@@ -110,7 +110,7 @@ All settings live in your `.env` file. Copy `.env.example` to `.env` — it is g
 |---|---|---|
 | `MODEL_PATH` | `/app/models/yolov8n.pt` | Path to the YOLO model **inside the container**. The Dockerfile pre-downloads `yolov8n.pt` to this path at build time. If you want a larger/more accurate model (e.g. `yolov8s.pt`), update this value **and** the `YOLO(...)` line in the Dockerfile, then rebuild. |
 | `CLASSES` | `0` | Comma-separated COCO class IDs to detect and blur. `0` = person. [Full class list](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/coco.yaml). |
-| `CONF` | `0.25` | Detection confidence threshold (0.0–1.0). Lower = more sensitive, more false positives. |
+| `CONF` | `0.35` | Detection confidence threshold (0.0–1.0). Lower = more sensitive, more false positives. |
 | `BLUR_RATIO` | `0.5` | Blur intensity applied to detected objects (0.1 = subtle, 1.0 = maximum). |
 
 ### Output

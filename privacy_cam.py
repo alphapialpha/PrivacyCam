@@ -27,7 +27,7 @@ os.environ.setdefault("YOLO_TELEMETRY", "False")
 
 import cv2  # noqa: E402  (must come after env setup)
 import paramiko  # noqa: E402
-from ultralytics import solutions  # noqa: E402
+from ultralytics import YOLO  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -146,21 +146,22 @@ def blur_persons(frame):
     Run YOLO ObjectBlurrer on *frame* (numpy BGR array) and return the
     blurred result as a numpy BGR array.
     """
-    blurrer = solutions.ObjectBlurrer(
-        model=MODEL_PATH,
-        conf=CONF,
-        classes=CLASSES,
-        blur_ratio=BLUR_RATIO,
-        show=False,
-        verbose=False,
-        show_conf=False,
-        show_labels=False,
-        line_width=0,
-    )
-    results = blurrer(frame)
-    blurred = results.plot_im
-    log.info("YOLO blur complete")
-    return blurred
+    model = YOLO(MODEL_PATH)
+    results = model(frame, conf=CONF, classes=CLASSES, verbose=False)[0]
+
+    out = frame.copy()
+    for box in results.boxes.xyxy.cpu().numpy().astype(int):
+        x1, y1, x2, y2 = box
+        roi = out[y1:y2, x1:x2]
+        if roi.size == 0:
+            continue
+        k = max(3, int(min(roi.shape[:2]) * BLUR_RATIO))
+        if k % 2 == 0:
+            k += 1
+        out[y1:y2, x1:x2] = cv2.GaussianBlur(roi, (k, k), 0)
+
+    log.info("YOLO blur complete (%d region(s))", len(results.boxes))
+    return out
 
 
 # ---------------------------------------------------------------------------
