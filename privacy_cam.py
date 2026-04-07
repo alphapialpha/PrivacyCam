@@ -155,6 +155,7 @@ def blur_persons(frame):
         verbose=False,
         show_conf=False,
         show_labels=False,
+        line_width=0,
     )
     results = blurrer(frame)
     blurred = results.plot_im

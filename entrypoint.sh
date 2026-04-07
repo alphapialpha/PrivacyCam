@@ -43,7 +43,7 @@ fi
 # supercronic supports standard 5-field Vixie cron syntax.
 # */N runs at every N-th minute past the hour: */5 → 0,5,10,...,55
 CRON_FILE="/tmp/crontab"
-printf '*/%s * * * *  /usr/local/bin/python /app/privacy_cam.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
+printf '*/%s * * * *  /usr/local/bin/python3 /app/privacy_cam.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
 
 log "Interval : every ${INTERVAL_MINUTES} minute(s)"
 log "Cron spec: */${INTERVAL_MINUTES} * * * *"
@@ -52,7 +52,7 @@ log "Cron spec: */${INTERVAL_MINUTES} * * * *"
 # Run once immediately so the output image is available before the first
 # scheduled tick.  A failure here is non-fatal — supercronic will retry.
 log "Running initial capture..."
-if python /app/privacy_cam.py; then
+if /usr/local/bin/python3 /app/privacy_cam.py; then
     log "Initial capture succeeded."
 else
     log "WARNING: Initial capture failed. Will retry at the next cron interval."
