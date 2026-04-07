@@ -52,7 +52,8 @@ RUN ARCH="$(uname -m)" && \
 RUN pip install --no-cache-dir \
       ultralytics \
       opencv-python-headless \
-      paramiko
+      paramiko \
+      shapely
 
 # ---------------------------------------------------------------------------
 # Application setup
