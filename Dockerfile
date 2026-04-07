@@ -88,7 +88,8 @@ RUN chmod +x entrypoint.sh healthcheck.sh
 # bind-mounted output directories writeable without extra chmod steps.
 # ---------------------------------------------------------------------------
 RUN useradd -l -m -u 1000 appcam && \
-    chown -R appcam:appcam /app
+    chown -R appcam:appcam /app && \
+    mkdir -p /tmp/Ultralytics && chmod 777 /tmp/Ultralytics
 USER appcam
 
 # ---------------------------------------------------------------------------
