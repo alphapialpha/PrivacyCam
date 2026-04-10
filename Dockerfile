@@ -53,8 +53,7 @@ RUN ARCH="$(uname -m)" && \
 # ---------------------------------------------------------------------------
 RUN pip install --no-cache-dir \
       ultralytics \
-      opencv-python-headless \
-      paramiko
+      opencv-python-headless
 
 # ---------------------------------------------------------------------------
 # Application setup

@@ -1,6 +1,6 @@
 # PrivacyCam
 
-A self-contained Docker service that captures a still image from a USB webcam at a configurable interval, automatically detects and blurs all persons in the frame using [YOLO](https://docs.ultralytics.com/), and optionally uploads the result to a remote server via SFTP.
+A self-contained Docker service that captures a still image from a USB webcam at a configurable interval, automatically detects and blurs all persons in the frame using [YOLO](https://docs.ultralytics.com/), and optionally uploads the result to a remote server via FTP or FTPS.
 
 Designed for outdoor or publicly visible webcams where privacy regulations (e.g. GDPR) require anonymising people before publishing images.
 
@@ -19,7 +19,7 @@ every N minutes
  save to disk           /output/latest.jpg  (+ optional timestamped copy)
       │
       ▼
- upload (optional)      SFTP via paramiko  →  remote server
+ upload (optional)      FTP / FTPS via ftplib  →  remote server
       │
       ▼
  write health file      /tmp/last_success_epoch  →  Docker healthcheck
@@ -128,38 +128,21 @@ All settings live in your `.env` file. Copy `.env.example` to `.env` — it is g
 | `HEALTH_FILE` | `/tmp/last_success_epoch` | Path where a Unix timestamp is written after each successful run. Read by `healthcheck.sh`. |
 | `HEALTH_MAX_AGE_SECONDS` | `600` | Container is marked unhealthy if no successful run occurred within this many seconds. Recommended: at least `INTERVAL_MINUTES × 60 × 2`. Default (600 s) matches a 5-minute interval with two cycles of grace. |
 
-### SFTP upload
+### FTP / FTPS upload
 
 | Variable | Default | Description |
 |---|---|---|
-| `UPLOAD_ENABLED` | `false` | Set to `true` to enable SFTP upload after each successful capture. |
-| `UPLOAD_HOST` | — | Hostname or IP of the SFTP server. |
-| `UPLOAD_PORT` | `22` | SSH port. |
-| `UPLOAD_USER` | — | SSH username. |
-| `UPLOAD_PASS` | — | SSH password. |
+| `UPLOAD_ENABLED` | `false` | Set to `true` to enable upload after each successful capture. |
+| `UPLOAD_PROTOCOL` | `ftps` | Transfer protocol. `ftps` = FTP over explicit TLS (recommended). `ftp` = plain FTP — no encryption, use only on a trusted private network. |
+| `UPLOAD_HOST` | — | Hostname or IP of the FTP server. |
+| `UPLOAD_PORT` | `21` | FTP port. |
+| `UPLOAD_USER` | — | FTP username. |
+| `UPLOAD_PASS` | — | FTP password. |
 | `UPLOAD_DEST_DIR` | — | Remote directory path. **Must already exist** on the server. |
 | `UPLOAD_REMOTE_NAME` | `latest.jpg` | Filename written on the remote server. |
-| `UPLOAD_HOST_KEY` | *(empty)* | Server's public host key for MITM protection. See below. |
+| `UPLOAD_TLS_VERIFY` | `true` | Verify the server's TLS certificate (FTPS only). Set to `false` for servers with self-signed or expired certificates — a warning is logged. |
 
-#### SFTP host key verification
-
-Setting `UPLOAD_HOST_KEY` is strongly recommended for uploads over the internet. Leave it empty to skip verification (acceptable for a trusted machine on your local network — a warning is logged).
-
-**How to get the value:**
-
-```bash
-# Standard port (22):
-ssh-keyscan -t ed25519 your.server.tld | awk '{print $2, $3}'
-
-# Non-standard port:
-ssh-keyscan -t ed25519 -p 2222 your.server.tld | awk '{print $2, $3}'
-```
-
-Paste the `algorithm base64key` output directly into `.env`:
-
-```
-UPLOAD_HOST_KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxxxxxxxxxxx
-```
+> **What is FTPS?** It is standard FTP with TLS encryption added. In FTP client software it is usually labelled *"Explicit TLS"* or *"TLS/SSL Explicit"*. It uses port 21, just like plain FTP.
 
 ## Output files
 
@@ -191,7 +174,7 @@ Useful on macOS, Windows, or for quick testing:
 
 ```bash
 # Install dependencies (use opencv-python, not headless, for local use)
-pip install ultralytics opencv-python paramiko
+pip install ultralytics opencv-python
 
 # Point OUT_DIR somewhere local
 export OUT_DIR=./output

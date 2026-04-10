@@ -6,15 +6,16 @@ Pipeline:
   1. Capture a single frame from the configured webcam.
   2. Detect persons with YOLO and blur them.
   3. Save the blurred image to OUT_DIR/LATEST_NAME (and optionally a timestamped copy).
-  4. Upload via SFTP if UPLOAD_ENABLED=true.
+  4. Upload via FTP/FTPS if UPLOAD_ENABLED=true.
   5. Write a success timestamp so the healthcheck can verify liveness.
 
 Invoked by cron (via supercronic) every INTERVAL_MINUTES minutes.
 All configuration is read from environment variables — see .env.example.
 """
 
-import base64
+import ftplib
 import logging
+import ssl
 import os
 import sys
 from datetime import datetime, timezone
@@ -26,7 +27,6 @@ os.environ.setdefault("YOLO_VERBOSE", "False")
 os.environ.setdefault("YOLO_TELEMETRY", "False")
 
 import cv2  # noqa: E402  (must come after env setup)
-import paramiko  # noqa: E402
 from ultralytics import YOLO  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -72,11 +72,12 @@ WRITE_TIMESTAMPED = _env_bool("WRITE_TIMESTAMPED", False)
 HEALTH_FILE       = Path(os.environ.get("HEALTH_FILE", "/tmp/last_success_epoch"))
 
 UPLOAD_ENABLED    = _env_bool("UPLOAD_ENABLED", False)
+UPLOAD_PROTOCOL   = os.environ.get("UPLOAD_PROTOCOL", "ftps").lower()
 UPLOAD_HOST       = os.environ.get("UPLOAD_HOST", "")
-UPLOAD_PORT       = _env_int("UPLOAD_PORT", 22)
+UPLOAD_PORT       = _env_int("UPLOAD_PORT", 21)
 UPLOAD_USER       = os.environ.get("UPLOAD_USER", "")
 UPLOAD_PASS       = os.environ.get("UPLOAD_PASS", "")
-UPLOAD_HOST_KEY   = os.environ.get("UPLOAD_HOST_KEY", "")
+UPLOAD_TLS_VERIFY  = _env_bool("UPLOAD_TLS_VERIFY", True)
 UPLOAD_DEST_DIR   = os.environ.get("UPLOAD_DEST_DIR", "")
 UPLOAD_REMOTE_NAME = os.environ.get("UPLOAD_REMOTE_NAME", "latest.jpg")
 
@@ -86,6 +87,10 @@ UPLOAD_REMOTE_NAME = os.environ.get("UPLOAD_REMOTE_NAME", "latest.jpg")
 # ---------------------------------------------------------------------------
 def validate_config() -> None:
     if UPLOAD_ENABLED:
+        if UPLOAD_PROTOCOL not in ("ftp", "ftps"):
+            raise ValueError(
+                f"UPLOAD_PROTOCOL must be 'ftp' or 'ftps' (got: {UPLOAD_PROTOCOL!r})"
+            )
         missing = [
             name for name, val in [
                 ("UPLOAD_HOST",     UPLOAD_HOST),
@@ -188,82 +193,44 @@ def save_output(blurred_frame) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# 4. SFTP upload
+# 4. FTP / FTPS upload
 # ---------------------------------------------------------------------------
-def _parse_host_key(key_spec: str) -> tuple:
-    """
-    Parse a host-key string of the form "algorithm base64key" into
-    (key_type_str, paramiko_key_object).
-
-    Obtain the value with:
-        ssh-keyscan -t ed25519 HOST | awk '{print $2, $3}'
-    For non-standard ports:
-        ssh-keyscan -t ed25519 -p PORT HOST | awk '{print $2, $3}'
-    """
-    parts = key_spec.strip().split(None, 1)
-    if len(parts) != 2:
-        raise ValueError(
-            "UPLOAD_HOST_KEY must be 'algorithm base64key' "
-            "(e.g. 'ssh-ed25519 AAAAC3...'). "
-            "Obtain it with: ssh-keyscan -t ed25519 HOST | awk '{print $2, $3}'"
-        )
-    key_type, key_b64 = parts
-    key_bytes = base64.b64decode(key_b64)
-
-    if key_type == "ssh-rsa":
-        pkey = paramiko.RSAKey(data=key_bytes)
-    elif key_type == "ssh-ed25519":
-        pkey = paramiko.Ed25519Key(data=key_bytes)
-    elif key_type.startswith("ecdsa-sha2-"):
-        pkey = paramiko.ECDSAKey(data=key_bytes)
+def upload_ftp(local_path: Path) -> None:
+    """Upload *local_path* via FTP or FTPS (explicit TLS) depending on UPLOAD_PROTOCOL."""
+    if UPLOAD_PROTOCOL == "ftps":
+        if not UPLOAD_TLS_VERIFY:
+            log.warning(
+                "FTP: UPLOAD_TLS_VERIFY=false — server TLS certificate is NOT verified. "
+                "Acceptable for private/LAN servers with self-signed certificates; "
+                "not recommended for internet-facing servers."
+            )
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        else:
+            ctx = ssl.create_default_context()
+        ftp = ftplib.FTP_TLS(context=ctx)
     else:
-        raise ValueError(f"Unsupported host key algorithm: {key_type!r}")
-
-    return key_type, pkey
-
-
-def upload_sftp(local_path: Path) -> None:
-    """Upload *local_path* to the configured SFTP server."""
-    ssh = paramiko.SSHClient()
-
-    if UPLOAD_HOST_KEY:
-        key_type, pkey = _parse_host_key(UPLOAD_HOST_KEY)
-        # For non-22 ports, paramiko's known-hosts lookup uses "[host]:port".
-        lookup_host = (
-            UPLOAD_HOST if UPLOAD_PORT == 22 else f"[{UPLOAD_HOST}]:{UPLOAD_PORT}"
-        )
-        ssh.get_host_keys().add(lookup_host, key_type, pkey)
-        ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
-        log.info("SFTP: host key verification enabled (%s)", key_type)
-    else:
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        log.warning(
-            "SFTP: UPLOAD_HOST_KEY is not set — host identity is NOT verified. "
-            "Acceptable for uploads to a trusted LAN machine; "
-            "set UPLOAD_HOST_KEY for internet-facing servers."
-        )
-
-    remote_path = f"{UPLOAD_DEST_DIR.rstrip('/')}/{UPLOAD_REMOTE_NAME}"
+        ftp = ftplib.FTP()
 
     try:
-        ssh.connect(
-            hostname=UPLOAD_HOST,
-            port=UPLOAD_PORT,
-            username=UPLOAD_USER,
-            password=UPLOAD_PASS,
-            timeout=15,
-            banner_timeout=15,
-            auth_timeout=15,
-            # Disable SSH-key/agent auth; we use password only.
-            look_for_keys=False,
-            allow_agent=False,
+        ftp.connect(UPLOAD_HOST, UPLOAD_PORT, timeout=15)
+        ftp.login(UPLOAD_USER, UPLOAD_PASS)
+        if UPLOAD_PROTOCOL == "ftps":
+            ftp.prot_p()  # upgrade data channel to TLS
+        if UPLOAD_DEST_DIR:
+            ftp.cwd(UPLOAD_DEST_DIR)
+        with open(local_path, "rb") as f:
+            ftp.storbinary(f"STOR {UPLOAD_REMOTE_NAME}", f)
+        log.info(
+            "Uploaded to %s://%s%s/%s",
+            UPLOAD_PROTOCOL, UPLOAD_HOST, UPLOAD_DEST_DIR, UPLOAD_REMOTE_NAME,
         )
-        sftp = ssh.open_sftp()
-        sftp.put(str(local_path), remote_path)
-        sftp.close()
-        log.info("Uploaded to %s:%s", UPLOAD_HOST, remote_path)
     finally:
-        ssh.close()
+        try:
+            ftp.quit()
+        except Exception:
+            ftp.close()
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +260,7 @@ def main() -> None:
     latest  = save_output(blurred)
 
     if UPLOAD_ENABLED:
-        upload_sftp(latest)
+        upload_ftp(latest)
 
     mark_success()
     log.info("privacy_cam done")
