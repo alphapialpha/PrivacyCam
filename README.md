@@ -1,4 +1,4 @@
-# PrivacyCam
+# LensVeil
 
 A self-contained Docker service that captures a still image from a USB webcam at a configurable interval, automatically detects and blurs all persons in the frame using [YOLO](https://docs.ultralytics.com/), and optionally uploads the result to a remote server via FTP or FTPS.
 
@@ -25,7 +25,7 @@ every N minutes
  write health file      /tmp/last_success_epoch  →  Docker healthcheck
 ```
 
-The container runs a single Python script (`privacy_cam.py`) triggered by [supercronic](https://github.com/aptible/supercronic) — a proper cron daemon built for containers. The YOLO model (`yolov8n.pt`) is baked into the image at build time so the container works fully offline after the initial build.
+The container runs a single Python script (`lensveil.py`) triggered by [supercronic](https://github.com/aptible/supercronic) — a proper cron daemon built for containers. The YOLO model (`yolov8n.pt`) is baked into the image at build time so the container works fully offline after the initial build.
 
 ## Requirements
 
@@ -33,14 +33,14 @@ The container runs a single Python script (`privacy_cam.py`) triggered by [super
 - [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) (Compose v2, i.e. `docker compose`)
 - Internet access during `docker compose build` (to pull the base image, pip packages, and YOLO model)
 
-> **macOS / Windows:** The built-in webcam cannot be passed into a Docker container. Run `privacy_cam.py` natively with Python instead (see [Running natively](#running-natively-without-docker)).
+> **macOS / Windows:** The built-in webcam cannot be passed into a Docker container. Run `lensveil.py` natively with Python instead (see [Running natively](#running-natively-without-docker)).
 
 ## Quick start
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/AlphaPiAlpha/PrivacyCam.git
-cd PrivacyCam
+git clone https://github.com/AlphaPiAlpha/LensVeil.git
+cd LensVeil
 
 # 2. Create your .env from the example and edit it
 cp .env.example .env
@@ -154,7 +154,7 @@ All settings live in your `.env` file. Copy `.env.example` to `.env` — it is g
 ## Checking container health
 
 ```bash
-docker inspect --format='{{.State.Health.Status}}' privacy_cam
+docker inspect --format='{{.State.Health.Status}}' LensVeil
 # starting | healthy | unhealthy
 
 docker compose logs -f
@@ -182,7 +182,7 @@ export WEBCAM_DEVICE=0
 export UPLOAD_ENABLED=false
 
 mkdir -p output
-python privacy_cam.py
+python lensveil.py
 ```
 
 The YOLO model is downloaded automatically on first run and cached by Ultralytics.
@@ -190,7 +190,7 @@ The YOLO model is downloaded automatically on first run and cached by Ultralytic
 ## Project structure
 
 ```
-PrivacyCam/
+LensVeil/
 ├── .env.example       # All config variables with documentation — copy to .env
 ├── .gitignore         # Ensures .env and output/ are never committed
 ├── .dockerignore      # Ensures .env is never baked into the Docker image
@@ -198,7 +198,7 @@ PrivacyCam/
 ├── Dockerfile         # Builds the image; pre-downloads the YOLO model
 ├── entrypoint.sh      # Validates config, does initial run, starts supercronic
 ├── healthcheck.sh     # Checked by Docker every 30 s
-└── privacy_cam.py     # The entire pipeline: capture → blur → save → upload
+└── lensveil.py         # The entire pipeline: capture → blur → save → upload
 ```
 
 ## Changing the YOLO model

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # healthcheck.sh — called by Docker's HEALTHCHECK directive.
 #
-# Exits 0 (healthy) if privacy_cam.py has succeeded within the last
+# Exits 0 (healthy) if lensveil.py has succeeded within the last
 # HEALTH_MAX_AGE_SECONDS seconds.  Exits 1 (unhealthy) otherwise.
 set -euo pipefail
 

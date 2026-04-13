@@ -3,12 +3,12 @@
 #
 # 1. Validates configured interval.
 # 2. Checks the output directory is writable.
-# 3. Runs privacy_cam.py once immediately (so the first image appears right away
+# 3. Runs lensveil.py once immediately (so the first image appears right away
 #    rather than waiting up to INTERVAL_MINUTES minutes).
 # 4. Generates a crontab and hands off to supercronic for scheduled execution.
 set -euo pipefail
 
-log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] privacy-cam: $*"; }
+log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] lensveil: $*"; }
 
 INTERVAL_MINUTES="${INTERVAL_MINUTES:-5}"
 OUT_DIR="${OUT_DIR:-/output}"
@@ -43,7 +43,7 @@ fi
 # supercronic supports standard 5-field Vixie cron syntax.
 # */N runs at every N-th minute past the hour: */5 → 0,5,10,...,55
 CRON_FILE="/tmp/crontab"
-printf '*/%s * * * *  /usr/local/bin/python3 /app/privacy_cam.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
+printf '*/%s * * * *  /usr/local/bin/python3 /app/lensveil.py\n' "${INTERVAL_MINUTES}" > "${CRON_FILE}"
 
 log "Interval : every ${INTERVAL_MINUTES} minute(s)"
 log "Cron spec: */${INTERVAL_MINUTES} * * * *"
@@ -52,7 +52,7 @@ log "Cron spec: */${INTERVAL_MINUTES} * * * *"
 # Run once immediately so the output image is available before the first
 # scheduled tick.  A failure here is non-fatal — supercronic will retry.
 log "Running initial capture..."
-if /usr/local/bin/python3 /app/privacy_cam.py; then
+if /usr/local/bin/python3 /app/lensveil.py; then
     log "Initial capture succeeded."
 else
     log "WARNING: Initial capture failed. Will retry at the next cron interval."

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PrivacyCam — one-shot privacy filter for a USB webcam.
+LensVeil — one-shot privacy filter for a USB webcam.
 
 Pipeline:
   1. Capture a single frame from the configured webcam.
@@ -37,7 +37,7 @@ logging.basicConfig(
     format="[%(asctime)s] %(levelname)s %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%SZ",
 )
-log = logging.getLogger("privacy_cam")
+log = logging.getLogger("lensveil")
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +250,7 @@ def mark_success() -> None:
 # ---------------------------------------------------------------------------
 def main() -> None:
     log.info(
-        "privacy_cam start — device=%d res=%dx%d model=%s",
+        "lensveil start — device=%d res=%dx%d model=%s",
         WEBCAM_DEVICE, CAPTURE_WIDTH, CAPTURE_HEIGHT, MODEL_PATH,
     )
     validate_config()
@@ -263,12 +263,12 @@ def main() -> None:
         upload_ftp(latest)
 
     mark_success()
-    log.info("privacy_cam done")
+    log.info("lensveil done")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        log.error("privacy_cam failed: %s", exc, exc_info=True)
+        log.error("lensveil failed: %s", exc, exc_info=True)
         sys.exit(1)

@@ -1,7 +1,7 @@
 services:
-  privacy_cam:
+  lensveil:
     build: .
-    container_name: PrivacyCam
+    container_name: LensVeil
     restart: unless-stopped
 
     # All configuration (schedule, model, SFTP, etc.) lives in .env.

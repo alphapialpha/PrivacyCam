@@ -1,5 +1,5 @@
 # =============================================================================
-# PrivacyCam Dockerfile
+# LensVeil Dockerfile
 # =============================================================================
 FROM python:3.13-slim
 
@@ -78,7 +78,7 @@ RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
 WORKDIR /app
 
 # Copy application scripts
-COPY privacy_cam.py entrypoint.sh healthcheck.sh ./
+COPY lensveil.py entrypoint.sh healthcheck.sh ./
 RUN chmod +x entrypoint.sh healthcheck.sh
 
 # ---------------------------------------------------------------------------
