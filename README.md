@@ -13,6 +13,9 @@ every N minutes
  capture frame          cv2.VideoCapture  →  raw JPEG in memory
       │
       ▼
+ flip (optional)        vertical / horizontal flip via cv2.flip
+      │
+      ▼
  detect & blur          YOLO detection + cv2.GaussianBlur  →  blurred numpy array
       │
       ▼
@@ -112,6 +115,14 @@ All settings live in your `.env` file. Copy `.env.example` to `.env` — it is g
 | `CLASSES` | `0` | Comma-separated COCO class IDs to detect and blur. `0` = person. [Full class list](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/coco.yaml). |
 | `CONF` | `0.35` | Detection confidence threshold (0.0–1.0). Lower = more sensitive, more false positives. |
 | `BLUR_RATIO` | `0.5` | Blur intensity applied to detected objects (0.1 = subtle, 1.0 = maximum). |
+
+### Image processing
+
+| Variable | Default | Description |
+|---|---|---|
+| `BLUR_ENABLED` | `true` | Master toggle for privacy blur. Set to `false` to skip YOLO detection entirely and save/upload the raw frame (useful for debugging or switching to a "public" feed). |
+| `FLIP_VERTICAL` | `false` | Flip the image top-to-bottom. Applied before blur, so YOLO operates on the correctly oriented frame. |
+| `FLIP_HORIZONTAL` | `false` | Flip the image left-to-right (mirror). Applied before blur. |
 
 ### Output
 

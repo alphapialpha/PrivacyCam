@@ -65,6 +65,10 @@ CLASSES           = [int(c.strip()) for c in os.environ.get("CLASSES", "0").spli
 CONF              = _env_float("CONF", 0.25)
 BLUR_RATIO        = _env_float("BLUR_RATIO", 0.5)
 
+BLUR_ENABLED      = _env_bool("BLUR_ENABLED", True)
+FLIP_VERTICAL     = _env_bool("FLIP_VERTICAL", False)
+FLIP_HORIZONTAL   = _env_bool("FLIP_HORIZONTAL", False)
+
 OUT_DIR           = Path(os.environ.get("OUT_DIR", "/output"))
 LATEST_NAME       = os.environ.get("LATEST_NAME", "latest.jpg")
 WRITE_TIMESTAMPED = _env_bool("WRITE_TIMESTAMPED", False)
@@ -144,12 +148,24 @@ def capture_frame():
 
 
 # ---------------------------------------------------------------------------
-# 2. YOLO blur
+# 2. Flip
+# ---------------------------------------------------------------------------
+def apply_flips(frame):
+    """Apply vertical and/or horizontal flip if configured."""
+    if FLIP_VERTICAL:
+        frame = cv2.flip(frame, 0)
+    if FLIP_HORIZONTAL:
+        frame = cv2.flip(frame, 1)
+    return frame
+
+
+# ---------------------------------------------------------------------------
+# 3. YOLO blur
 # ---------------------------------------------------------------------------
 def blur_persons(frame):
     """
-    Run YOLO ObjectBlurrer on *frame* (numpy BGR array) and return the
-    blurred result as a numpy BGR array.
+    Run YOLO detection on *frame* (numpy BGR array), blur detected regions
+    with cv2.GaussianBlur, and return the result.
     """
     model = YOLO(MODEL_PATH)
     results = model(frame, conf=CONF, classes=CLASSES, verbose=False)[0]
@@ -170,7 +186,7 @@ def blur_persons(frame):
 
 
 # ---------------------------------------------------------------------------
-# 3. Save
+# 4. Save
 # ---------------------------------------------------------------------------
 def save_output(blurred_frame) -> Path:
     """Write the blurred frame to OUT_DIR. Returns the path of latest.jpg."""
@@ -193,7 +209,7 @@ def save_output(blurred_frame) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# 4. FTP / FTPS upload
+# 5. FTP / FTPS upload
 # ---------------------------------------------------------------------------
 def upload_ftp(local_path: Path) -> None:
     """Upload *local_path* via FTP or FTPS (explicit TLS) depending on UPLOAD_PROTOCOL."""
@@ -234,7 +250,7 @@ def upload_ftp(local_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 5. Health file
+# 6. Health file
 # ---------------------------------------------------------------------------
 def mark_success() -> None:
     """Write the current Unix epoch to HEALTH_FILE for the healthcheck."""
@@ -256,7 +272,8 @@ def main() -> None:
     validate_config()
 
     frame   = capture_frame()
-    blurred = blur_persons(frame)
+    frame   = apply_flips(frame)
+    blurred = blur_persons(frame) if BLUR_ENABLED else frame
     latest  = save_output(blurred)
 
     if UPLOAD_ENABLED:
